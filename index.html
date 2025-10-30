@@ -4053,14 +4053,12 @@
             <div class="settings-hero">Paramètres</div>
             <div class="settings-sub">Personnalisez l’affichage, les langues et vos objectifs</div>
           </div>
-          <!-- NOUVEAU : Section pour renommer le chapitre -->
           <div class="settings-section">
             <div class="section-title">Chapitre</div>
             <label class="mt6 muted" style="font-size:13px">Nom du chapitre</label>
             <input id="chTitleInput" class="input" type="text" value="${chap.title}">
             <label class="mt6 muted" style="font-size:13px">Emoji (optionnel)</label>
             <input id="chEmojiInput" class="input" type="text" maxlength="4" value="${chap.emoji||''}" placeholder="ex: 📚">
-            <div class="mt6"> <button class="btn" id="saveChapterIdentity">Enregistrer</button> </div>
           </div>
           <div class="settings-section">
             <div class="section-title">Apparence</div>
@@ -4084,7 +4082,7 @@
             <div class="card" id="typoPreview" style="margin-bottom:8px; padding:10px; position:relative;">
               <div class="term">Exemple recto (Front)</div>
               <div class="definition" style="margin-top:6px">Exemple verso (Back)</div>
-              <div class="muted" style="font-size:12px; margin-top:6px">Glissez ↑↓ pour ajuster via les roues ou directement ici.</div>
+              <div class="muted" style="font-size:12px; margin-top:6px">Ajustez la taille via les roues ci-dessous.</div>
               <div id="typoToast" class="size-toast"></div>
             </div>
             <div class="wheel" id="wheelFsTerm"><div class="name">Recto (Front)</div><div class="hint">Glissez ↑↓</div><div class="wheel-value"></div></div>
@@ -4114,38 +4112,32 @@
           </div>
         </div>`;
 
-      // NOUVEAU : Event listeners pour renommer le chapitre
       const chTitleInput = $('#chTitleInput');
       const chEmojiInput = $('#chEmojiInput');
-      $('#saveChapterIdentity').onclick = ()=>{
+      const saveChapterIdentity = () => {
         const newTitle = (chTitleInput.value||'').trim();
         const newEmoji = (chEmojiInput.value||'').trim();
 
-        // *** CORRECTION APPLIQUÉE *** : Gère le cas d'un chapitre virtuel (fichier)
         if (chap.virtual && chap._groupId) {
           const subj = getCurrentSubject();
           const group = findGroupById(subj, chap._groupId);
           if (group) {
-            // On modifie le groupe original
             group.title = newTitle;
             group.emoji = newEmoji;
-            
-            // On met aussi à jour le chapitre virtuel pour une actualisation immédiate
             chap.title = newTitle; 
             chap.emoji = newEmoji;
-            updateChapterDescription(chap); // Met à jour la description
+            updateChapterDescription(chap);
           }
         } else {
-          // Comportement normal pour un chapitre réel
           if (newTitle) chap.title = newTitle;
           chap.emoji = newEmoji;
           updateChapterDescription(chap);
         }
-
         saveData();
-        // On rafraîchit la vue actuelle pour voir le nom mis à jour
-        goChapter(chap.id, false); 
+        setTopbar({title:`${chap.title} • Paramètres`});
       };
+      chTitleInput.addEventListener('input', saveChapterIdentity);
+      chEmojiInput.addEventListener('input', saveChapterIdentity);
 
       const P=data.app.prefs;
       const refreshTheme=()=>{$('#themeLbl').textContent=data.app.theme==='light'?'Clair':'Sombre';};
@@ -4153,10 +4145,10 @@
       $('#toggleLangSwap').onclick=()=>{chap.settings.langSwap=!chap.settings.langSwap; saveData(); refreshLang(); renderByState(false);};
       $('#toggleTheme').onclick=()=>{data.app.theme=data.app.theme==='light'?'dark':'light'; saveData(); applyTheme(); refreshTheme();};
       const activeAccent=data.app.prefs.accent||'indigo';
-      $$('#accentSwatches .swatch').forEach(sw=>{
+      $('#accentSwatches .swatch').forEach(sw=>{
         const key=sw.getAttribute('data-accent');
         sw.classList.toggle('is-active', key===activeAccent);
-        sw.onclick=()=>{data.app.prefs.accent=key; saveData(); applyUI(); $$('#accentSwatches .swatch').forEach(x=>x.classList.toggle('is-active', x.getAttribute('data-accent')===key));};
+        sw.onclick=()=>{data.app.prefs.accent=key; saveData(); applyUI(); $('#accentSwatches .swatch').forEach(x=>x.classList.toggle('is-active', x.getAttribute('data-accent')===key));};
       });
 
       bindWheel($('#wheelFsTerm'),{get:()=>P.fsTerm, set:v=>{P.fsTerm=v}, min:12,max:60,step:1,unit:'px'});
@@ -4176,7 +4168,7 @@
         resetChapter(chap.id); saveData(); openSettings(chapterId,false);
       };
       $('#resetAllBtn').onclick=resetAll;
-      bindTypoPreviewDrag();
+      // L'appel à bindTypoPreviewDrag() a été supprimé ici
     }
 
     function reconcileChaptersWithCanonical(canonChapters, oldChapters){
